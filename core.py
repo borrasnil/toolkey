@@ -7,7 +7,7 @@ class Alg(Enum):
 
 
 @dataclass
-class DN:
+class DistingushedName:
     cn: str
     ou: str
     o: str
@@ -29,7 +29,7 @@ class KeyPair:
     private_key: str
     hash_pass: str
     validity: int # epoch
-    owner: CA
+    owner: DistingushedName
 
 @dataclass
 class PublicKey:
