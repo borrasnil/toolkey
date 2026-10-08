@@ -35,3 +35,10 @@ def private_key_to_pem(private_key, password):
         serialization.PrivateFormat.PKCS8,  # estándar para guardar claves privadas
         serialization.BestAvailableEncryption(password.encode("utf-8")),  # cifra con la contraseña
     ).decode()  # de bytes a texto para poder guardarlo en JSON
+
+def build_name(fields):
+    attrs = []
+    for label, oid in DN_FIELDS:  # recorremos los campos en orden
+            attrs.append(x509.NameAttribute(oid, value))  # añadimos el campo al nombre del certificado
+            parts.append(f"{label}={value}")  # y a la cadena legible
+    return x509.Name(attrs), ", ".join(parts)  # devolvemos el nombre y el texto unido por comas

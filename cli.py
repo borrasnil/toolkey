@@ -41,8 +41,10 @@ def gen_key_pair():
 
     private_key = generate_privatekey()
     public_key = private_key_to_pem(private_key, password)
-    cert = self_signed_cert(private_key, alias)
+    cert = self_signed_cert(private_key, dn.to_x501_name())
 
     keystore = KeyStore(STORE_PATH, password)
     keystore.add(alias, private_key, public_key, cert_to_pem(cert), dn)
+    keystore.save()
+    print(f"Claves RSA guardado con el alias {alias} en {STORE_PATH}")
 
