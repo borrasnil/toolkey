@@ -1,6 +1,11 @@
 from dataclasses import dataclass
+import secrets
+import json
 from datetime import datetime
 from enum import Enum
+from cli import *
+
+FORMAT_VERSION = "1"
 
 class KeytoreError(Exception):
     ...
@@ -19,6 +24,25 @@ class DistingushedName:
     st: str
     c: str
 
+    def to_dict(self) -> dict:
+        return {
+            "CN": self.cn,
+            "OU": self.ou,
+            "O": self.o,
+            "L": self.l,
+            "ST": self.st,
+            "C": self.c,
+        }
+    
+    def to_x501_name(self) -> x509.Name:
+        return x509.Name([
+            x509.NameAttribute(x509.NameOID.COMMON_NAME, self.cn),
+            x509.NameAttribute(x509.NameOID.ORGANIZATIONAL_UNIT_NAME, self.ou),
+            x509.NameAttribute(x509.NameOID.ORGANIZATION_NAME, self.o),
+            x509.NameAttribute(x509.NameOID.LOCALITY_NAME, self.l),
+            x509.NameAttribute(x509.NameOID.STATE_OR_PROVINCE_NAME, self.st),
+            x509.NameAttribute(x509.NameOID.COUNTRY_NAME, self.c),
+        ])
 @dataclass
 class Certificate:
     ...
@@ -51,6 +75,7 @@ class PrivateKey:
 class KeyStore:
     path: str
     _key: str
+    _salt = secrets.token_bytes(16)
     _entries = {}
 
     def __repr__(self) -> str:
@@ -68,5 +93,10 @@ class KeyStore:
         }
 
     def save(self):
-        ...
-
+        data = {
+            "version": FORMAT_VERSION,
+            "salt": self._salt,
+            "keys": self._entries,
+        }
+        with open(STORE_PATH, "w") as f:
+            json.dump(data, f)
