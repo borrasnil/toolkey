@@ -1,5 +1,9 @@
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
+
+class KeytoreError(Exception):
+    ...
 
 class Alg(Enum):
     RSA = 1
@@ -46,7 +50,23 @@ class PrivateKey:
 @dataclass
 class KeyStore:
     path: str
-    alias: str
+    _key: str
+    _entries = {}
 
     def __repr__(self) -> str:
-        return f"KeyStore(alias='{self.alias}', path='{self.path}')"
+        return f"KeyStore(path='{self.path}')"
+
+    def add(self, alias: str, private_key, public_key, certificate, dn):
+        if alias in self._entries:
+            raise KeytoreError("Error ya existe")
+        self._entries[alias] = {
+            "private_key": private_key,
+            "public_key": public_key,
+            "certificate": certificate,
+            "dn": dn,
+            "created": datetime.now()
+        }
+
+    def save(self):
+        ...
+

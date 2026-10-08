@@ -1,4 +1,5 @@
 from core import *
+from crypto import *
 import json
 import pathlib
 
@@ -21,16 +22,27 @@ def show_list():
 def version():
     print(f'v{VERSION}')
 
+def create_dn() -> DistingushedName:
+    cn = input("Name (CN): ")
+    ou = input("OU: ")
+    o = input("Org: ")
+    l = input("Location: ")
+    st = input("Province: ")
+    c = input("Country: ")
+    return DistingushedName(cn, ou, o ,l , st, c)
+
 def gen_key_pair():
     print("Input the KeyStore information")
     password = input("password: ")
     alias = input("alias: ")
 
     print("\nNow input your data as a DN")
-    cn = input("cn: ")
-    ou = input("ou: ")
-    o = input("o: ")
-    l = input("l: ")
-    st = input("c: ")
+    dn = create_dn()
 
-    
+    private_key = generate_privatekey()
+    public_key = private_key_to_pem(private_key, password)
+    cert = self_signed_cert(private_key, alias)
+
+    keystore = KeyStore(STORE_PATH, password)
+    keystore.add(alias, private_key, public_key, cert_to_pem(cert), dn)
+
