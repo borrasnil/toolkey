@@ -1,11 +1,15 @@
 from dataclasses import dataclass
 import secrets
 import json
+import pathlib
 from datetime import datetime
 from enum import Enum
-from cli import *
+
+from cryptography import x509
 
 FORMAT_VERSION = "1"
+STORE_FILE = '.keytool'
+STORE_PATH = str(pathlib.Path.home()) + '/' + STORE_FILE
 
 class KeytoreError(Exception):
     ...

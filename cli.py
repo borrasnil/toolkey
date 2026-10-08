@@ -1,11 +1,8 @@
 from core import *
 from crypto import *
 import json
-import pathlib
 
 VERSION = '0.0.1'
-STORE_FILE = '.keytool'
-STORE_PATH = str(pathlib.Path.home()) + '/' + STORE_FILE
 
 def get_key_stores(path: str) -> dict:
     with open(path, "r") as f:
