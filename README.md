@@ -36,26 +36,37 @@ python main.py -genkeypair     # genera un par de claves RSA 2048 + certificado 
 |---|---|
 | `main.py` | Punto de entrada: define las opciones con `argparse` y llama a las funciones |
 | `cli.py` | Lógica de cada comando (`show_list`, `version`, `gen_key_pair`) y preguntas al usuario |
-| `core.py` | Modelos de datos (`DistingushedName`, `KeyStore`, `KeyPair`...) y errores |
-| `crypto.py` | Operaciones criptográficas: clave RSA, certificado autofirmado, conversión a PEM |
+| `core.py` | Modelos de datos (`DistinguishedName`, `KeyStore`, `KeyPair`...) y errores; autodetección del formato |
+| `crypto.py` | Operaciones criptográficas: clave RSA, certificado autofirmado, conversión a PEM, cifrado del almacén |
+| `interop.py` | Interop con el `keytool` real: lectura/escritura de PKCS#12 y JKS |
 
-Los datos se guardan en `~/.keytool`.
+Los datos se guardan en `~/.keytool` (formato propio cifrado por defecto).
 
 ## Estado actual
 
 | Comando | Estado |
 |---|---|
-| `-version` | Funciona |
-| `-list` | Parcial: no lista las entradas de un almacén (el formato de lectura no coincide) |
-| `-genkeypair` | Parcial: el flujo está montado pero aún no guarda el almacén en disco |
-| `-certreq`, `-delete`, `-exportcert`, `-changealias`, `-importcert`, `-gencert`, `-genseckey`, `-importpass`, `-importkeystore`, `-keypasswd`, `-storepasswd`, `-printcert`, `-printcertreq`, `-printcrl`, `-showinfo` | Declarados en `main.py`, pendientes de implementar |
+| `-version`, `-showinfo` | Funcionan |
+| `-list [-v] [-rfc]` | Funciona; autodetecta TOOLKEY / PKCS12 / JKS |
+| `-genkeypair` | Funciona; `-storetype PKCS12\|JKS\|TOOLKEY` elige el formato de salida |
+| `-genseckey`, `-importpass` | Funcionan (solo formato TOOLKEY) |
+| `-exportcert`, `-printcert`, `-importcert` | Funcionan |
+| `-certreq`, `-printcertreq`, `-gencert` | Funcionan |
+| `-delete`, `-changealias` | Funcionan |
+| `-storepasswd`, `-keypasswd` | Funcionan (conservan el formato del almacén) |
+| `-importkeystore` | Funciona; `-deststoretype` convierte entre formatos |
+
+## Interop con el `keytool` real (verificado contra JDK 25)
+
+- **PKCS#12 (por defecto desde JDK 9):** `PBEWithHmacSHA256AndAES_256` (PBES2, PBKDF2/AES-256-CBC, 10000 iters, PRF hmacWithSHA256) para claves y certificados, integridad `HmacPBESHA256` (10000 iters). Se lee y se escribe; el `keytool` original abre lo que generamos y viceversa, con idénticos fingerprints SHA-256.
+- **JKS (`-storetype JKS`):** cabecera `FEEDFEED`, integridad `SHA1(UTF-16BE(pass) + "Mighty Aphrodite" + cuerpo)`, claves en `EncryptedPrivateKeyInfo` (OID 1.3.6.1.4.1.42.2.17.1.1, stream-cipher SHA1 + checksum SHA1). Se lee y se escribe.
+- **Formato propio TOOLKEY:** JSON cifrado con AES-256-GCM, clave derivada con PBKDF2-HMAC-SHA256 (600k iters); las claves privadas van además en PKCS#8 cifrado con `keypass`.
+- Límite conocido: un PKCS#12 con varias claves privadas lista todos los alias y certificados bien, pero solo se recupera la primera clave (límite de la librería `cryptography`).
 
 ## Pendiente
 
-- Guardar y cargar el almacén en JSON (`KeyStore.save`) con protección por contraseña.
-- Opciones comunes: `-alias`, `-keystore`, `-storepass`, `-file`.
-- Convertir el DN a `x509.Name` y exportar la clave pública en PEM.
-- Implementar el resto de comandos.
+- Opciones `-keypass` distintas de `-storepass` en PKCS#12 con varias contraseñas.
+- JCEKS (Triple-DES propietario): se detecta y se sugiere migrar a PKCS#12.
 - Pruebas automáticas.
 
 ## Seguridad
